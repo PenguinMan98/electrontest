@@ -1,0 +1,15 @@
+{
+  "name": "electrontest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "electron": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^1.6.11",
+    "gun": "^0.7.9"
+  }
+}

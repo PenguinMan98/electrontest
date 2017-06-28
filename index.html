@@ -1,0 +1,58 @@
+<html>
+<head>
+  <title>My first Electron App</title>
+  <style>
+    holes{
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+    hole {
+      flex-basis: 25%;
+      background-image: url(assets/img/hole.png);
+      background-color: black;
+      height: 20vw;
+      border: 1px solid black;
+      background-size: cover;
+      box-sizing: border-box;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hello World! My name is Electron</h1>
+  <p>First, let's draw seven 'holes' for the moles. I'll just put simple images on the page.</p>
+  <p>Next, I'll put a listener on them to change their background color when they are clicked. This is to test GUN. It will be working when I click on a hole and the background color changes in all instances of the program.</p>
+  <holes>
+    <hole data-id="1"></hole>
+    <hole data-id="2"></hole>
+    <hole data-id="3"></hole>
+    <hole data-id="4"></hole>
+    <hole data-id="5"></hole>
+    <hole data-id="6"></hole>
+    <hole data-id="7"></hole>
+  </holes>
+</body>
+<script>
+  const electron = require('electron');
+  const { ipcRenderer } = electron;
+
+  var holes = document.querySelectorAll('hole');
+  var i;
+  for( i = 0; i < holes.length; i++){
+    holes[i].addEventListener('click', function(event){
+      clickHole( this )
+    });
+  }
+  function clickHole( node ){
+    var bgColor = '#'+Math.floor(Math.random()*16777215).toString(16);
+    console.log('clicked',node.dataset.id, bgColor);
+    node.style.borderColor = bgColor;
+
+    /*Send the click information to the electron app*/
+    ipcRenderer.send('hole:click',{
+      id: node.dataset.id,
+      bgColor: bgColor
+    });
+  }
+</script>
+</html>
