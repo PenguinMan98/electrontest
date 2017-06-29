@@ -9,10 +9,10 @@
     }
     hole {
       flex-basis: 25%;
-      background-image: url(assets/img/hole.png);
-      background-color: black;
+      background-image: url(assets/img/hole_t.png);
+      background-color: white;
       height: 20vw;
-      border: 3px solid black;
+      /*border: 3px solid black;*/
       background-size: cover;
       box-sizing: border-box;
     }
@@ -56,7 +56,7 @@
   ipcRenderer.on('holes:update', (event,data) => {
     console.log('The app sent me an update for the holes!',data);
     console.log('holes', holes, 'this hole', holes[data.hole]);
-    holes[data.hole].style.borderColor = data.data.bgColor;
+    holes[data.hole].style.backgroundColor = data.data.bgColor;
   });
 
   function clickHole( node ){
