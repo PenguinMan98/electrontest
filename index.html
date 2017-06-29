@@ -36,17 +36,33 @@
   const electron = require('electron');
   const { ipcRenderer } = electron;
 
-  var holes = document.querySelectorAll('hole');
+  var holeElements = document.querySelectorAll('hole');
+  var holes = [];
+
   var i;
-  for( i = 0; i < holes.length; i++){
-    holes[i].addEventListener('click', function(event){
+  for( i = 0; i < holeElements.length; i++){
+    holes[i+1] = holeElements[i];
+    holeElements[i].addEventListener('click', function(event){
       clickHole( this )
     });
   }
+
+  /*ipcRenderer.on('app:promptForName', (event,data) => {
+    console.log('The app is asking for a name!',data);
+  });
+  ipcRenderer.on('myself:update', (event,data) => {
+    console.log('The app sent me an update for my user!',data);
+  });*/
+  ipcRenderer.on('holes:update', (event,data) => {
+    console.log('The app sent me an update for the holes!',data);
+    console.log('holes', holes, 'this hole', holes[data.hole]);
+    holes[data.hole].style.borderColor = data.data.bgColor;
+  });
+
   function clickHole( node ){
     var bgColor = '#'+Math.floor(Math.random()*16777215).toString(16);
     console.log('clicked',node.dataset.id, bgColor);
-    node.style.borderColor = bgColor;
+    //node.style.borderColor = bgColor;
 
     /*Send the click information to the electron app*/
     ipcRenderer.send('hole:click',{
