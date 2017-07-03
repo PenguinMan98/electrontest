@@ -3,7 +3,7 @@ const Gun = require('gun');
 const { app, BrowserWindow, ipcMain } = electron;
 const gun = new Gun('https://gun-gfcvuhvicq.now.sh/gun');
 const fiveMinutes = 1000 * 60 * 5;
-let mainWindow;
+let mainWindow, thisAction;
 
 /* ==== GUN Aliases ==== */
 let gMoleapp = gun.get('moleapp');
@@ -24,39 +24,25 @@ app.on('ready', function(){
     console.log('player list updates received!', data, key);
   });*/
   // Listen for my player
-  /*gMyself.on((data, key) => {
+  gMyself.on((data, key) => {
     console.log('I got me!', data, key);
-    let namePrompt = false;
 
-    if(typeof data.name == 'undefined'){
-      // My player doesn't exist. Prompt the user for a name.
-      console.log('my player has no name...');
-      namePrompt = true;
-    }else if( data.thisAction - data.lastAction > fiveMinutes ){
-      console.log('my player has expired...');
-      namePrompt = true;
-    }else{
-      gMyself.put({'lastAction':data.thisAction});
-    }
-    if(namePrompt){
-      mainWindow.webContents.send('app:promptForName',{'name':data.name});
-    }else{
-      mainWindow.webContents.send('myself:update',data);
-    }
-  });*/
+    mainWindow.webContents.send('myself:update',data);
+  });
   // Listen for hole changes
   gHoles.map((value, key)=>{
     console.log('I got a hole update!',value,key);
     mainWindow.webContents.send('holes:update',{'hole':key,'data' : value});
   });
-  // Put my player
-  gMoleapp.get('myself').put({'thisAction':Date.now()});
 
 });
 
-/* ipcMain.on / mainWindow.webContents.send */
 // Do something when a hole is clicked
+ipcMain.on('myself:put',function(event,data){
+  console.log('Setting Username', data);
+  gMyself.put({'name':data.username, 'thisAction':Date.now()});
+});
 ipcMain.on('hole:click',function(event,data){
   console.log('hole clicked', data);
-  gHoles.get(data.id).put({'bgColor':data.bgColor});
+  //gHoles.get(data.id).put({'bgColor':data.bgColor});
 });

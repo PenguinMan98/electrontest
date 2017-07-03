@@ -3,7 +3,7 @@
   <title>My first Electron App</title>
   <style>
     holes{
-      display: flex;
+      display: none;
       justify-content: space-around;
       flex-wrap: wrap;
     }
@@ -16,12 +16,74 @@
       background-size: cover;
       box-sizing: border-box;
     }
+    username{
+
+    }
+    username label{
+
+    }
+    username input{
+
+    }
+    username myname{
+      display: none;
+    }
+    error{
+      display: none;
+      color: red;
+      width: 100%;
+      text-align: center;
+    }
+    dash{
+      display: none;
+      justify-content: space-between;
+      width: 100%;
+      align-items: stretch;
+    }
+    myinfo, scores{
+      flex-grow: 1;
+      border: 1px solid #ccc;
+      display: block;
+    }
+    myinfo{
+      flex-basis: 40%;
+    }
+    myinfo name{
+      font-size: 30px;
+      text-transform: capitalize;
+      display: block;
+      text-align: center;
+    }
+    myinfo score{
+      text-align: center;
+    }
+    scores{
+      flex-basis: 60%;
+    }
+    scores h2{
+      font-weight: normal;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
-  <h1>Hello World! My name is Electron</h1>
-  <p>First, let's draw seven 'holes' for the moles. I'll just put simple images on the page.</p>
-  <p>Next, I'll put a listener on them to change their background color when they are clicked. This is to test GUN. It will be working when I click on a hole and the background color changes in all instances of the program.</p>
+  <h1>Gun Moles!</h1>
+  <username>
+    <label for="username">Please Choose a Username</label>
+    <input name="username" id="username" type="text" value="" />
+    <button name="submit" id="submit">Let's Go!</button>
+  </username>
+  <error></error>
+  <dash>
+    <myinfo>
+      <name></name>
+      <score>Score: </score>
+    </myinfo>
+    <scores>
+      <h2>Those <span>other</span> guys:</h2>
+      <playerlist></playerlist>
+    </scores>
+  </dash>
   <holes>
     <hole data-id="1"></hole>
     <hole data-id="2"></hole>
@@ -38,36 +100,71 @@
 
   var holeElements = document.querySelectorAll('hole');
   var holes = [];
+  var i, username;
 
-  var i;
+  /*==== initialize page ====*/
   for( i = 0; i < holeElements.length; i++){
     holes[i+1] = holeElements[i];
     holeElements[i].addEventListener('click', function(event){
       clickHole( this )
     });
   }
-
-  /*ipcRenderer.on('app:promptForName', (event,data) => {
-    console.log('The app is asking for a name!',data);
+  document.querySelector('input').onkeypress = (event)=>{
+    event = event || window.event;
+    if(event.keyCode == 13){
+      username = document.querySelector('input').value;
+      if(!username){
+        showError('Please enter a username!');
+      }else{
+        startGame(username);
+      }
+    }
+  };
+  document.querySelector('button').addEventListener('click',(e)=>{
+    username = document.querySelector('input').value;
+    if(!username){
+      showError('Please enter a username!');
+    }else{
+      startGame(username);
+    }
   });
-  ipcRenderer.on('myself:update', (event,data) => {
+  // request playerlist
+  ipcRenderer.send('playerlist:get', {});
+
+
+  /*==== server event handlers ====*/
+  /*ipcRenderer.on('myself:update', (event,data) => {
     console.log('The app sent me an update for my user!',data);
   });*/
   ipcRenderer.on('holes:update', (event,data) => {
     console.log('The app sent me an update for the holes!',data);
-    console.log('holes', holes, 'this hole', holes[data.hole]);
-    holes[data.hole].style.backgroundColor = data.data.bgColor;
+    //holes[data.hole].style.backgroundColor = data.data.bgColor;
   });
 
-  function clickHole( node ){
-    var bgColor = '#'+Math.floor(Math.random()*16777215).toString(16);
-    console.log('clicked',node.dataset.id, bgColor);
-    //node.style.borderColor = bgColor;
+  /*==== page event handlers ====*/
+  function startGame( username ){
+    console.log("Ready! Let's do this " + username + "!");
+    // fire the username off to the server
+    ipcRenderer.send('myself:put',{'username':username});
+    // set the username
+    document.querySelector('myinfo name').innerHTML = username;
+
+    // hide the form, show the game
+    document.querySelector('username').style.display = "none";
+    document.querySelector('dash').style.display = "flex";
+    document.querySelector('holes').style.display = "flex";
+  }
+  function showError( error ){
+    var errorElem = document.querySelector('error');
+    errorElem.innerHTML = 'Error: ' + error;
+    errorElem.style.display = 'block';
+  }
+  function clickHole( node ) {
+    console.log('clicked', node.dataset.id );
 
     /*Send the click information to the electron app*/
-    ipcRenderer.send('hole:click',{
-      id: node.dataset.id,
-      bgColor: bgColor
+    ipcRenderer.send('hole:click', {
+      id: node.dataset.id
     });
   }
 </script>
