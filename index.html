@@ -64,6 +64,9 @@
       font-weight: normal;
       text-align: center;
     }
+    scores h2 span{
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -133,9 +136,9 @@
 
 
   /*==== server event handlers ====*/
-  /*ipcRenderer.on('myself:update', (event,data) => {
-    console.log('The app sent me an update for my user!',data);
-  });*/
+  ipcRenderer.on('player:update', (event,data) => {
+    console.log('The app sent me an update for a player!',data);
+  });
   ipcRenderer.on('holes:update', (event,data) => {
     console.log('The app sent me an update for the holes!',data);
     //holes[data.hole].style.backgroundColor = data.data.bgColor;
@@ -146,6 +149,8 @@
     console.log("Ready! Let's do this " + username + "!");
     // fire the username off to the server
     ipcRenderer.send('myself:put',{'username':username});
+    // beg for my userlist. BEG I SAY
+    ipcRenderer.send('playerlist:get',{});
     // set the username
     document.querySelector('myinfo name').innerHTML = username;
 
