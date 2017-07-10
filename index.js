@@ -11,12 +11,15 @@ let moleId = 1;
 console.log('my Session Id: ' + sessionId);
 
 /* ==== GUN Aliases ==== */
-let gMoleapp = gun.get('moleapp');
-let gMyself = gMoleapp.get('myself');
-let gPlayerList = gMoleapp.get('player_list');
-let gGameData = gMoleapp.get('game_data');
-let gHoles = gGameData.get('holes');
-let gMoles = gGameData.get('moles');
+let gunSuffix = 1;
+let gMoleapp = gun.get('moleapp'+gunSuffix);
+let gPlayerList = gMoleapp.get('player_list'+gunSuffix);
+let gHoles = gMoleapp.get('holes1'+gunSuffix);
+let gMoles = gMoleapp.get('moles1'+gunSuffix);
+// reset
+//gMoles.put({});
+//gPlayerList.put({});
+
 
 /* ==== Main program entry point ==== */
 app.on('ready', function(){
@@ -56,6 +59,7 @@ ipcMain.on('username:put',function(event,data){
     score: 0
   })
 });
+// get the players
 ipcMain.on('player_list:get',function(event,data){
   gPlayerList.val(function(player_list){
     var i;
@@ -97,16 +101,18 @@ ipcMain.on('mole:expire',function(event,data){
   console.log('mole expired', data);
   gMoles.get(data.moleId).val(function(mole){
     console.log('Peeking at Mole', mole);
-    if(mole.fastestPlayer == sessionId){ // I was fastest!
-      // adjust score
-      gPlayerList.get(sessionId).val(function(player){
-        player.score += 1;
-        gPlayerList.get(sessionId).put(player);
-      });
+    if(!mole.expired){
+      if(mole.fastestPlayer == sessionId){ // I was fastest!
+        // adjust score
+        gPlayerList.get(sessionId).val(function(player){
+          player.score += 1;
+          gPlayerList.get(sessionId).put(player);
+        });
+      }
+      mole.expired = true;
+      console.log('mole',mole, data);
+      gMoles.get(data.moleId).put(mole);
     }
-    mole.expired = true;
-    console.log('mole',mole, data);
-    gMoles.get(data.moleId).put(mole);
   });
   // release the hole
   gHoles.get(data.hole).get('status').put('ready');
