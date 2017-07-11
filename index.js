@@ -76,6 +76,7 @@ ipcMain.on('player_list:get',function(event,data){
   });
 });
 ipcMain.on('hole:click',function(event,data){
+  console.log('hole clicked', data);
   if(typeof holes[data.id] == undefined ){ // If I don't know the hole state,
     gHoles.get(data.id).val(function(data){ // get it
       holes[data.id] = data;
@@ -119,6 +120,9 @@ ipcMain.on('mole:expire',function(event,data){
 });
 
 function clickHole( holeId ){
+  // record that I made an action
+  gPlayerList.get(sessionId).get('lastAction').put(Date.now());
+  console.log('handle a hole click', holeId);
   if(typeof holes[holeId] == "undefined"
     || typeof holes[holeId].state == "undefined"
     || holes[holeId].state == 'ready' ){ // This hole is new or ready.  Create a mole.

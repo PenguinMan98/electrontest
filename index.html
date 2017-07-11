@@ -208,12 +208,13 @@
     let moleHere = false, moleId = 0, mole, delta = 0;
     for( moleId in molesAppeared ){
       mole = molesAppeared[moleId];
-      if(mole.hole == holeId){
+      if(mole.hole == holeId ){
         moleHere = true;
         break;
       }
     }
     if(moleHere){ // If there is a mole here
+      console.log("There's a mole here");
       if( mole.createdBy != sessionId){ // if it's not mine
         delta = Date.now() - molesAppeared[moleId].appeared; // record how quickly I whacked it
         console.log('whacking a mole', Date.now(), molesAppeared[moleId].appeared);
@@ -229,16 +230,18 @@
         },2000);
       }
     }else{ // if there is no mole here,
+      console.log("No mole here");
       ipcRenderer.send('hole:click', {
         id: holeId
       });
     }
   }
   function renderPlayers( ){
+    const fiveMinutes = 1000 * 60 * 5;
     console.log('render players', players);
     var i=0, html='';
     for( i in players ){
-      if ( i != '_') {
+      if ( i != '_' && players[i].lastAction > (Date.now() - fiveMinutes) ) { // Don't render players who have been idle for 5 minutes
         html += "<player><name>"+players[i].name+"</name>: <score>"+players[i].score+"</score></player>";
         console.log('player html', players[i], html);
       }
@@ -250,6 +253,7 @@
     ipcRenderer.send('mole:expire',{
       'moleId':moleId,
       'hole':molesAppeared[moleId].hole});
+    delete molesAppeared[moleId];
   }
 </script>
 </html>
