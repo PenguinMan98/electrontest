@@ -132,7 +132,7 @@ ipcMain.on('mole:expire',function(event,data){
 function clickHole( holeId ){
   // record that I made an action
   gPlayerList.get(sessionId).get('lastAction').put(Date.now());
-  console.log('handle a hole click', holeId);
+  console.log('handle a hole click', holeId, holes[holeId]);
   if(typeof holes[holeId] == "undefined"
     || typeof holes[holeId].state == "undefined"
     || holes[holeId].state == 'ready' ){ // This hole is new or ready.  Create a mole.
@@ -149,7 +149,7 @@ function clickHole( holeId ){
       'fastestPlayer':0
     });
   }else if(holes[holeId].state == 'mole'){  // if there is a mole,
-    //clickMole(holeId);
+    gHoles.get(holeId).get('state').put('ready');
   }else{ // if the hole is in any other state,
     console.log('Error, unknown state: ' + holes[holeId].state );
     gHoles.get(holeId).put({  // ready up
