@@ -118,6 +118,7 @@
       clickHole( this )
     });
   }
+  /*==== Username Form Listeners ====*/
   document.querySelector('input').onkeypress = (event)=>{
     event = event || window.event;
     if(event.keyCode == 13){
@@ -143,29 +144,28 @@
   ipcRenderer.on('myself:update', (event,data) => {
     console.log('The app sent me an update for myself!',data);
     // set the username
-    document.querySelector('myinfo name').innerHTML = data.player.name;
+    /*document.querySelector('myinfo name').innerHTML = data.player.name;
     document.querySelector('myinfo score').innerHTML = "Score: " + data.player.score;
-    sessionId = data.sessionId;
+    sessionId = data.sessionId;*/
   });
   ipcRenderer.on('player:update', (event,data) => {
     console.log('The app sent me an update for a player!',data);
     // time to build this
-    console.log('building player', data.sessionId, data.player);
+    /*console.log('building player', data.sessionId, data.player);
     players[data.sessionId] = data.player;
     console.log('players',players);
-    renderPlayers();
-
+    renderPlayers();*/
   });
   ipcRenderer.on('holes:update', (event,data) => {
     console.log('The app sent me an update for a hole!',data);
-    if(data.status == 'ready'){
+    /*if(data.status == 'ready'){
       holes[data.hole].style.backgroundImage = "url(assets/img/hole_t.png)"; // clear the mole
-    }
+    }*/
   });
   ipcRenderer.on('mole:update', (event,data) => {
     console.log('The app sent me an update for a mole!',data);
 
-    if( typeof molesAppeared[data.id] == 'undefined'){ // new mole
+    /*if( typeof molesAppeared[data.id] == 'undefined'){ // new mole
       molesAppeared[data.id] = {
         'createdBy':data.createdBy,
         'hole':data.hole,
@@ -177,67 +177,23 @@
       }, 5000);
     }else if( molesAppeared[data.id].expired ){ // if the mole expired,
       holes[data.hole].style.backgroundImage = "url(assets/img/hole_t.png)";// remove it
-    }
+    }*/
   });
 
   /*==== page event handlers ====*/
+
+  /*==== helper functions ====*/
   function startGame( username ){
-    console.log("Ready! Let's do this " + username + "!");
-    // fire the username off to the server
-    ipcRenderer.send('username:put',{'username':username});
-
-    // request playerlist
-    ipcRenderer.send('player_list:get', {});
-
-    // hide the form, show the game
-    document.querySelector('username').style.display = "none";
-    document.querySelector('dash').style.display = "flex";
-    document.querySelector('holes').style.display = "flex";
+    ipcRenderer.send('game:start',{'username':username})
+  }
+  function clickHole( node ) {
+  }
+  function expireMole( moleId ){
   }
   function showError( error ){
     var errorElem = document.querySelector('error');
     errorElem.innerHTML = 'Error: ' + error;
     errorElem.style.display = 'block';
-  }
-  /*
-    When the user clicks on a hole,
-    if there is no mole, send one.
-    If there is a mole, whack it and record the time.
-  */
-  function clickHole( node ) {
-    let holeId = node.dataset.id;
-    console.log('clicked', holeId );
-
-    let moleHere = false, moleId = 0, mole, delta = 0;
-    for( moleId in molesAppeared ){
-      mole = molesAppeared[moleId];
-      if(mole.hole == holeId ){
-        moleHere = true;
-        break;
-      }
-    }
-    if(moleHere){ // If there is a mole here
-      console.log("There's a mole here");
-      if( mole.createdBy != sessionId){ // if it's not mine
-        delta = Date.now() - molesAppeared[moleId].appeared; // record how quickly I whacked it
-        console.log('whacking a mole', Date.now(), molesAppeared[moleId].appeared);
-        ipcRenderer.send('mole:whacked',{
-          'hole':holeId,
-          'myTime':delta,
-          'moleId':moleId }); // send that
-        holes[holeId].style.backgroundImage = "url(assets/img/whacked.png)"; // switch to whacked
-
-        molesAppeared[moleId].whacked = true; // reset the timer
-        setTimeout(function(){
-          expireMole(moleId);
-        },2000);
-      }
-    }else{ // if there is no mole here,
-      console.log("No mole here");
-      ipcRenderer.send('hole:click', {
-        id: holeId
-      });
-    }
   }
   function renderPlayers( ){
     const fiveMinutes = 1000 * 60 * 5;
@@ -250,13 +206,6 @@
       }
     }
     document.querySelector('scores playerlist').innerHTML = html;
-  }
-  function expireMole( moleId ){
-    console.log('expire mole ' + moleId );
-    ipcRenderer.send('mole:expire',{
-      'moleId':moleId,
-      'hole':molesAppeared[moleId].hole});
-    delete molesAppeared[moleId];
   }
 </script>
 </html>

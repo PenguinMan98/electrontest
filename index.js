@@ -31,7 +31,7 @@ app.on('ready', function(){
   /* ==== GUN Listeners ==== */
   // Listen for updates to the player_list
   gPlayerList.map( (data, key) => {
-    // console.log('player list updates received!', data, key);
+    console.log('player list updates received!', data, key);
     if(key == sessionId){
       mainWindow.webContents.send('myself:update',{'player':data, 'sessionId':key});
     }else{
@@ -42,24 +42,24 @@ app.on('ready', function(){
   // Listen for hole changes
   gHoles.map((value, key)=>{
     holes[key] = value;
-    mainWindow.webContents.send('holes:update',{'hole':key,'status' : value.status});
+    /*mainWindow.webContents.send('holes:update',{'hole':key,'status' : value.status});*/
   });
   gMoles.map((value, key)=>{
     // console.log('I got a mole update!',value,key);
-    mainWindow.webContents.send('mole:update',{
+    /*mainWindow.webContents.send('mole:update',{
       'id':key,
       'hole':value.hole,
-      'createdBy':value.createdBy});
+      'createdBy':value.createdBy});*/
   });
 });
 
 // Do something when a hole is clicked
 ipcMain.on('username:put',function(event,data){
-  gPlayerList.get(sessionId).put({
+  /*gPlayerList.get(sessionId).put({
     name: data.username,
     lastAction: Date.now(),
     score: 0
-  })
+  });*/
 });
 // get the players
 ipcMain.on('player_list:get',function(event,data){
@@ -77,40 +77,32 @@ ipcMain.on('player_list:get',function(event,data){
     }
   });
 });
-// Do something when a playerlist is requested
-ipcMain.on('playerlist:get',function(event,data){
-  console.log('playerlist requested', data);
-  gPlayerList.val((data)=>{
-    console.log('gPlayerList should be here',data);
-  });
-});
 // Do something when a hole is clicked
 ipcMain.on('hole:click',function(event,data){
   console.log('hole clicked', data);
-  if(typeof holes[data.id] == undefined ){ // If I don't know the hole state,
+   /*if(typeof holes[data.id] == undefined ){ // If I don't know the hole state,
     gHoles.get(data.id).val(function(data){ // get it
       holes[data.id] = data;
       clickHole(data.id); // then update it
     });
   }else{ // otherwise
     clickHole(data.id); // update it
-  }
-  //gHoles.get(data.id).put({'bgColor':data.bgColor});
+  }*/
 });
 ipcMain.on('mole:whacked',function(event,data){
-  //console.log('mole whacked', data);
-  gMoles.get(data.moleId).val(function(mole){
+  console.log('mole whacked', data);
+  /*gMoles.get(data.moleId).val(function(mole){
     console.log('peeking at mole', mole);
     if(mole.fastestTime == 0 || mole.fastestTime < data.myTime){
       mole.fastestTime = data.myTime;
       mole.fastestPlayer = sessionId;
       gMoles.get(data.moleId).put(mole);
     }
-  });
+  });*/
 });
 ipcMain.on('mole:expire',function(event,data){
   console.log('mole expired', data);
-  gMoles.get(data.moleId).val(function(mole){
+  /*gMoles.get(data.moleId).val(function(mole){
     console.log('Peeking at Mole', mole);
     if(!mole.expired){
       if(mole.fastestPlayer == sessionId){ // I was fastest!
@@ -126,14 +118,17 @@ ipcMain.on('mole:expire',function(event,data){
     }
   });
   // release the hole
-  gHoles.get(data.hole).get('status').put('ready');
+  gHoles.get(data.hole).get('status').put('ready');*/
 });
+
+/*==== Helper Functions ====*/
+
 
 function clickHole( holeId ){
   // record that I made an action
-  gPlayerList.get(sessionId).get('lastAction').put(Date.now());
+  //gPlayerList.get(sessionId).get('lastAction').put(Date.now());
   console.log('handle a hole click', holeId, holes[holeId]);
-  if(typeof holes[holeId] == "undefined"
+  /*if(typeof holes[holeId] == "undefined"
     || typeof holes[holeId].state == "undefined"
     || holes[holeId].state == 'ready' ){ // This hole is new or ready.  Create a mole.
     let moleId = getId();
@@ -155,7 +150,7 @@ function clickHole( holeId ){
     gHoles.get(holeId).put({  // ready up
       'state':'ready',
     });
-  }
+  }*/
 }
 
 function getId(){
