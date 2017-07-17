@@ -110,57 +110,56 @@
   var players = [];
   var molesAppeared = {};
   var sessionId = 0;
+  var appState = 'enter-user';
 
-  /*==== initialize page ====*/
+  /*==== Hole Listeners ====*/
   for( i = 0; i < holeElements.length; i++){
-    holes[i+1] = holeElements[i];
+    holes[i+1] = {
+      "elem": holeElements[i],
+      "state": "ready"
+    };
     holeElements[i].addEventListener('click', function(event){
-      clickHole( this )
+      clickHole( this.dataset.id );
     });
   }
   /*==== Username Form Listeners ====*/
   document.querySelector('input').onkeypress = (event)=>{
     event = event || window.event;
     if(event.keyCode == 13){
-      username = document.querySelector('input').value;
-      if(!username){
-        showError('Please enter a username!');
-      }else{
-        startGame(username);
-      }
+      processUsername( document.querySelector('input').value );
     }
   };
   document.querySelector('button').addEventListener('click',(e)=>{
-    username = document.querySelector('input').value;
-    if(!username){
-      showError('Please enter a username!');
-    }else{
-      startGame(username);
-    }
+    processUsername( document.querySelector('input').value );
   });
 
 
   /*==== server event handlers ====*/
   ipcRenderer.on('myself:update', (event,data) => {
     console.log('The app sent me an update for myself!',data);
+    // note the sessionId
+    sessionId = data.sessionId;
     // set the username
-    /*document.querySelector('myinfo name').innerHTML = data.player.name;
-    document.querySelector('myinfo score').innerHTML = "Score: " + data.player.score;
-    sessionId = data.sessionId;*/
+    updateUser( data.sessionId, data.player );
+    // show the game if you haven't already
+    if( appState == 'enter-user' ){
+      showGame();
+      appState = 'game';
+    }
   });
   ipcRenderer.on('player:update', (event,data) => {
     console.log('The app sent me an update for a player!',data);
-    // time to build this
-    /*console.log('building player', data.sessionId, data.player);
-    players[data.sessionId] = data.player;
-    console.log('players',players);
-    renderPlayers();*/
+    // update the user
+    updateUser( data.sessionId, data.player );
   });
   ipcRenderer.on('holes:update', (event,data) => {
     console.log('The app sent me an update for a hole!',data);
-    /*if(data.status == 'ready'){
+    // If I'm returning to a ready state, clear any mole images.
+    if(holes[data.hole].state != data.state && data.state == 'ready'){
       holes[data.hole].style.backgroundImage = "url(assets/img/hole_t.png)"; // clear the mole
-    }*/
+    }
+    // update the state
+    holes[data.hole].state = data.state;
   });
   ipcRenderer.on('mole:update', (event,data) => {
     console.log('The app sent me an update for a mole!',data);
@@ -183,10 +182,48 @@
   /*==== page event handlers ====*/
 
   /*==== helper functions ====*/
-  function startGame( username ){
-    ipcRenderer.send('game:start',{'username':username})
+  function processUsername( username ){
+    if(!username){
+      showError('Please enter a username!');
+    }else{
+      startGame(username);
+    }
   }
-  function clickHole( node ) {
+  function startGame( username ){
+    ipcRenderer.send('username:put',{'username':username});
+  }
+  function updateUser( id, player ){
+    players[id] = player; // update the user data
+    if( id == sessionId ){ // update my own details
+      renderMe();
+    }else{
+      renderPlayers();  // render the player list
+    }
+  }
+  function showGame(){
+    // hide username
+    document.querySelector('username').style.display = 'none';
+    // show dash
+    document.querySelector('dash').style.display = 'flex';
+    // show holes
+    document.querySelector('holes').style.display = 'flex';
+  }
+  function clickHole( hId ) {
+    console.log('Hole Clicked ', hId);
+    console.log('holes', holes);
+    var hole = holes[hId];
+    if(!hole){ showError("Invalid Hole: " + hId); }
+    if( typeof hole.state == 'undefined'){
+      console.log('This hole has no state');
+      // I don't have a state for the hole. Perhaps go get one?
+    }else if( hole.state == 'ready' ){
+      console.log('This hole is ready for a mole');
+      // Add a new mole!
+      ipcRenderer.send("mole:add",{'hId':hId});
+    }else if( hole.state == 'mole' ){
+      console.log('This hole has a mole already. Let\'s whack it!');
+      // whack it!
+    }
   }
   function expireMole( moleId ){
   }
@@ -195,14 +232,19 @@
     errorElem.innerHTML = 'Error: ' + error;
     errorElem.style.display = 'block';
   }
+  function renderMe(){
+    document.querySelector('myinfo name').innerHTML = players[sessionId].name;
+    document.querySelector('myinfo score').innerHTML = "Score: " + players[sessionId].score;
+  }
   function renderPlayers( ){
     const fiveMinutes = 1000 * 60 * 5;
     console.log('render players', players);
-    var i=0, html='';
+    var i=0, html='', p;
     for( i in players ){
-      if ( i != '_' && players[i].lastAction > (Date.now() - fiveMinutes) ) { // Don't render players who have been idle for 5 minutes
-        html += "<player><name>"+players[i].name+"</name>: <score>"+players[i].score+"</score></player>";
-        console.log('player html', players[i], html);
+      if ( i != '_' && i != sessionId && players[i].lastAction > (Date.now() - fiveMinutes) ) { // Don't render me or players who have been idle for 5 minutes
+        p = players[i];
+        html += "<player><name>"+p.name+"</name>: <score>"+p.score+"</score>&nbsp;(<sessionId>"+i+"</sessionId>)</player>";
+        console.log('player html', p, html);
       }
     }
     document.querySelector('scores playerlist').innerHTML = html;

@@ -7,11 +7,12 @@ const fiveMinutes = 1000 * 60 * 5;
 const sessionId = getId();
 let mainWindow, thisAction;
 let holes = [];
-let moleId = 1;
+let moleId = 0;
+var appState = 'enter-user';
 console.log('my Session Id: ' + sessionId);
 
 /* ==== GUN Aliases ==== */
-let gunSuffix = 1;
+let gunSuffix = 5;
 let gMoleapp = gun.get('moleapp'+gunSuffix);
 let gPlayerList = gMoleapp.get('player_list'+gunSuffix);
 let gHoles = gMoleapp.get('holes1'+gunSuffix);
@@ -25,6 +26,7 @@ let gMoles = gMoleapp.get('moles1'+gunSuffix);
 
 /* ==== Main program entry point ==== */
 app.on('ready', function(){
+  /* Create the mainWindow */
   mainWindow = new BrowserWindow({});
   mainWindow.loadURL(`file://${__dirname}/index.html`);
 
@@ -34,18 +36,19 @@ app.on('ready', function(){
     console.log('player list updates received!', data, key);
     if(key == sessionId){
       mainWindow.webContents.send('myself:update',{'player':data, 'sessionId':key});
+      if( appState == 'enter-user'){ appState = 'game'; }
     }else{
       mainWindow.webContents.send('player:update',{'player':data, 'sessionId':key});
     }
   });
-
   // Listen for hole changes
   gHoles.map((value, key)=>{
-    holes[key] = value;
-    /*mainWindow.webContents.send('holes:update',{'hole':key,'status' : value.status});*/
+    console.log('I got a hole update!',value,key);
+    mainWindow.webContents.send('holes:update',{'hole':key,'state' : value.state});
   });
+  // Listen for mole changes
   gMoles.map((value, key)=>{
-    // console.log('I got a mole update!',value,key);
+    console.log('I got a mole update!',value,key);
     /*mainWindow.webContents.send('mole:update',{
       'id':key,
       'hole':value.hole,
@@ -53,29 +56,10 @@ app.on('ready', function(){
   });
 });
 
-// Do something when a hole is clicked
+// When the user submits their username,
 ipcMain.on('username:put',function(event,data){
-  /*gPlayerList.get(sessionId).put({
-    name: data.username,
-    lastAction: Date.now(),
-    score: 0
-  });*/
-});
-// get the players
-ipcMain.on('player_list:get',function(event,data){
-  gPlayerList.val(function(player_list){
-    var i;
-    for( i in player_list ){
-      gPlayerList.get(i).val(function(player){
-        console.log('sending player to be rendered', player);
-        if( i == sessionId ){
-          mainWindow.webContents.send('myself:update',{'player':player, 'sessionId':i});
-        }else{
-          mainWindow.webContents.send('player:update',{'player':player, 'sessionId':i});
-        }
-      });
-    }
-  });
+  createPlayer(data.username);
+  requestPlayerList();
 });
 // Do something when a hole is clicked
 ipcMain.on('hole:click',function(event,data){
@@ -88,6 +72,20 @@ ipcMain.on('hole:click',function(event,data){
   }else{ // otherwise
     clickHole(data.id); // update it
   }*/
+});
+ipcMain.on('mole:add',function(event,data){
+  console.log('Add a mole', data);
+  // create a new mole
+  gMoles.get(getId()).put({
+    'playerClicks':{},
+    'createdBy':sessionId,
+    'hole':data.hId,
+    'expired':false,
+    'fastestTime':0,
+    'fastestPlayer':0
+  });
+  // update the hole state to 'mole'
+  gHoles.get(data.hId).get('state').put('mole');
 });
 ipcMain.on('mole:whacked',function(event,data){
   console.log('mole whacked', data);
@@ -122,7 +120,23 @@ ipcMain.on('mole:expire',function(event,data){
 });
 
 /*==== Helper Functions ====*/
-
+function createPlayer( username ){
+  gPlayerList.get(sessionId).put({
+    name: username,
+    lastAction: Date.now(),
+    score: 0
+  });
+}
+function requestPlayerList(){
+  gPlayerList.val().map(function(player, id){
+    console.log('Getting Players! I got: '+id+' => ',player);
+    if( id == sessionId ){
+      mainWindow.webContents.send('myself:update',{'player':player, 'sessionId':id});
+    }else{
+      mainWindow.webContents.send('player:update',{'player':player, 'sessionId':id});
+    }
+  });
+}
 
 function clickHole( holeId ){
   // record that I made an action
