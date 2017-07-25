@@ -136,7 +136,6 @@
 
   /*==== server event handlers ====*/
   ipcRenderer.on('myself:update', (event,data) => {
-    console.log('The app sent me an update for myself!',data);
     // note the sessionId
     sessionId = data.sessionId;
     // set the username
@@ -148,35 +147,39 @@
     }
   });
   ipcRenderer.on('player:update', (event,data) => {
-    console.log('The app sent me an update for a player!',data);
     // update the user
     updateUser( data.sessionId, data.player );
   });
   ipcRenderer.on('holes:update', (event,data) => {
-    console.log('The app sent me an update for a hole!',data);
     // If I'm returning to a ready state, clear any mole images.
     if(holes[data.hole].state != data.state && data.state == 'ready'){
-      holes[data.hole].style.backgroundImage = "url(assets/img/hole_t.png)"; // clear the mole
+      holeState(data.hole,data.state);
     }
     // update the state
     holes[data.hole].state = data.state;
   });
-  ipcRenderer.on('mole:update', (event,data) => {
-    console.log('The app sent me an update for a mole!',data);
+  ipcRenderer.on('mole:update', (event,mole) => {
+    // note the mole
+    molesAppeared[mole.id] = {
+      'createdBy':mole.createdBy,
+      'hole':mole.hole,
+      'appeared':Date.now(),
+      'whacked':false };
 
-    /*if( typeof molesAppeared[data.id] == 'undefined'){ // new mole
-      molesAppeared[data.id] = {
-        'createdBy':data.createdBy,
-        'hole':data.hole,
-        'appeared':Date.now(),
-        'whacked':false };
-      holes[data.hole].style.backgroundImage = "url(assets/img/hole_w_mole.png)";
-      setTimeout(function(){
-        expireMole(data.id);
-      }, 5000);
-    }else if( molesAppeared[data.id].expired ){ // if the mole expired,
-      holes[data.hole].style.backgroundImage = "url(assets/img/hole_t.png)";// remove it
-    }*/
+    // show the mole to the user
+    holeState(mole.hole, 'mole');
+
+    // set the timer to expire the mole
+    setTimeout(function(){
+      expireMole(mole.hole, mole.id);
+    }, 5000);
+
+    // remove old moles
+    for( var i in molesAppeared ){
+      if( molesAppeared[i].expired ){
+        delete molesAppeared[i];
+      }
+    }
   });
 
   /*==== page event handlers ====*/
@@ -223,9 +226,17 @@
     }else if( hole.state == 'mole' ){
       console.log('This hole has a mole already. Let\'s whack it!');
       // whack it!
+      whackMole( hId );
     }
   }
-  function expireMole( moleId ){
+  function expireMole( hId, mId ){
+    // hide the mole
+    holeState(hId,'ready');
+    // tag the mole as expired
+    if(molesAppeared[mId])
+      molesAppeared[mId].expired = true;
+    // send a note to the server to expire it
+    ipcRenderer.send("mole:expire",{'hId':hId,'mId':mId});
   }
   function showError( error ){
     var errorElem = document.querySelector('error');
@@ -244,10 +255,38 @@
       if ( i != '_' && i != sessionId && players[i].lastAction > (Date.now() - fiveMinutes) ) { // Don't render me or players who have been idle for 5 minutes
         p = players[i];
         html += "<player><name>"+p.name+"</name>: <score>"+p.score+"</score>&nbsp;(<sessionId>"+i+"</sessionId>)</player>";
-        console.log('player html', p, html);
       }
     }
     document.querySelector('scores playerlist').innerHTML = html;
   }
+  function holeState( hole, state ){
+
+    if(state == 'mole'){
+      holes[hole].elem.style.backgroundImage = "url(assets/img/hole_w_mole.png)";
+    }else if (state == 'whacked'){
+      holes[hole].elem.style.backgroundImage = "url(assets/img/whacked.png)";
+    }else{
+      holes[hole].elem.style.backgroundImage = "url(assets/img/hole_t.png)";
+    }
+  }
+  function whackMole( hId ){
+    var mId;
+    // find my mole
+    for(var i in molesAppeared){
+      if( molesAppeared[i].hole && molesAppeared[i].hole == hId && !molesAppeared[i].expired ){
+        mId = i;
+        break;
+      }
+    }
+    if(!mId){
+      showError('Umm.. I couldn\'t find a mole in hole '+hId+'...');
+    }
+    if(!molesAppeared[mId].whacked && molesAppeared[mId].createdBy != sessionId){ // don't whack twice and don't allow me to whack my own mole
+      console.log('whacking mole', JSON.stringify(holes[hId]), JSON.stringify(molesAppeared[mId]));
+      // show the whacked image
+      holeState(hId,'whacked');
+      // diff the timeClicked with the time appeared.
+    }
+  };
 </script>
 </html>
