@@ -1,7 +1,7 @@
 const electron = require('electron');
 const Gun = require('gun');
 const { app, BrowserWindow, ipcMain } = electron;
-const gun = new Gun('https://gun-gfcvuhvicq.now.sh/gun');
+const gun = new Gun('https://gun-jjbwvtqbei.now.sh/gun');
 //const gun = new Gun();
 const fiveMinutes = 1000 * 60 * 5;
 const sessionId = getId();
